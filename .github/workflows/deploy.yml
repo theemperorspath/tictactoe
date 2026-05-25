@@ -26,6 +26,8 @@ jobs:
         run: pip install pygbag
       - name: Build
         run: pygbag --build main.py
+      - name: Patch HTML
+        run: python web/patch.py
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web

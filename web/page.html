@@ -1,0 +1,289 @@
+<head><!--
+//=============================================================================
+--><script type="application/javascript">
+// END BLOCK
+
+config = {
+    xtermjs : "1",
+    _sdl2 : "canvas",
+    user_canvas : 0,
+    user_canvas_managed : 0,
+    gui_divider : 1,
+    ume_block : 1,
+    can_close : 0,
+    archive : "tictactoe",
+    gui_debug : 0,
+    cdn : "https://pygame-web.github.io/cdn/0.9.3/",
+    autorun : 0,
+    PYBUILD : "3.12",
+    fb_ar   : 1.5,
+    fb_width : "600",
+    fb_height : "400"
+}
+
+function show_infobox() {
+    infobox.style.display = "block";
+    const w = infobox.offsetWidth;
+    const h = infobox.offsetHeight;
+    infobox.style.left = ((window.innerWidth - w) / 2) + "px";
+    infobox.style.top  = ((window.innerHeight - h) / 2) + "px";
+}
+
+</script>
+
+    <title>Minimax Tic-Tac-Toe · theemperorspath</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Unbeatable Tic-Tac-Toe AI using minimax with alpha-beta pruning — CS50 AI project">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="icon" type="image/png" href="favicon.png" sizes="16x16">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #0a0a0a;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 0 20px;
+            height: 48px;
+            background: rgba(0, 0, 0, 0.7);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(10px);
+        }
+
+        header h1 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+        }
+
+        header .sep {
+            width: 1px;
+            height: 16px;
+            background: rgba(255,255,255,0.15);
+        }
+
+        header .tag {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.35);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        header a {
+            margin-left: auto;
+            font-size: 0.72rem;
+            color: rgba(255,255,255,0.35);
+            text-decoration: none;
+            letter-spacing: 0.04em;
+        }
+        header a:hover { color: rgba(255,255,255,0.7); }
+
+        #game-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            min-height: 0;
+        }
+
+        #game-container {
+            position: relative;
+            /*
+             * Fill as much space as possible while keeping 3:2 (600×400).
+             * min() picks whichever axis runs out first.
+             */
+            width: min(calc(100% ), calc((100vh - 88px) * 1.5));
+            aspect-ratio: 3 / 2;
+            background: #000;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.8);
+        }
+
+        /* pygbag fills these absolutely — keep them filling the container */
+        canvas.emscripten {
+            border: none;
+            background: transparent;
+            padding: 0;
+            margin: 0 auto;
+            position: absolute;
+            top: 0; bottom: 0; left: 0; right: 0;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            z-index: 5;
+        }
+
+        /* loading bar — sits below the canvas */
+        #transfer {
+            position: fixed;
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            z-index: 50;
+        }
+
+        #status {
+            font-size: 0.65rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        #progress {
+            width: 160px;
+            height: 2px;
+            appearance: none;
+            border: none;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 1px;
+        }
+        #progress::-webkit-progress-bar   { background: rgba(255,255,255,0.08); border-radius: 1px; }
+        #progress::-webkit-progress-value { background: rgba(255,255,255,0.55); border-radius: 1px; }
+        #progress::-moz-progress-bar      { background: rgba(255,255,255,0.55); border-radius: 1px; }
+
+        /* click-to-start / loading overlay */
+        #infobox {
+            position: fixed;
+            background: rgba(15, 15, 15, 0.92);
+            color: rgba(255, 255, 255, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            padding: 10px 22px;
+            z-index: 999999;
+            backdrop-filter: blur(16px);
+        }
+
+        /* hide all debug/dev elements */
+        #crt, #pyconsole, #dlg { display: none !important; }
+
+        div.emscripten { text-align: center; }
+    </style>
+
+    <script src="https://pygame-web.github.io/cdn/0.9.3//browserfs.min.js"></script>
+
+</head>
+
+<body>
+
+    <header>
+        <h1>Minimax Tic-Tac-Toe</h1>
+        <div class="sep"></div>
+        <span class="tag">Alpha-Beta Pruning &nbsp;·&nbsp; CS50 AI</span>
+        <a href="https://github.com/theemperorspath/tictactoe" target="_blank" rel="noopener">source ↗</a>
+    </header>
+
+    <div id="game-area">
+        <div id="game-container">
+
+            <canvas class="emscripten" id="canvas"
+                width="1px" height="1px"
+                oncontextmenu="event.preventDefault()" tabindex="1">
+            </canvas>
+
+            <canvas class="emscripten" id="canvas3d"
+                width="600px" height="400px"
+                oncontextmenu="event.preventDefault()" tabindex="1" hidden>
+            </canvas>
+
+        </div>
+    </div>
+
+    <div id="transfer">
+        <div class="emscripten" id="status">Downloading...</div>
+        <progress value="0" max="100" id="progress"></progress>
+    </div>
+
+    <div id="infobox">Loading, please wait ...</div>
+
+    <div id="html"></div>
+
+    <!-- required pygbag hook elements (hidden) -->
+    <div id="crt">
+        <div id="system" hidden>
+            <button id="aiostop" disabled></button>
+            <button id="aiopaused_true" disabled></button>
+            <button id="aiopaused_false" disabled></button>
+            <button id="pygame_mixer_music_pause" disabled></button>
+            <div id="load_min"></div>
+            <div id="load_avg"></div>
+            <div id="load_max"></div>
+            <button id="load_rst" disabled></button>
+            <div id="level"></div>
+            <div id="stateBattery"></div>
+        </div>
+        <div id="box" hidden>
+            <div id="info"></div>
+            <iframe id="iframe" name="iframe"
+                width="470px" height="90%"
+                src="https://pygame-web.github.io/cdn/0.9.3/empty.html"
+                scrolling="yes">
+            </iframe>
+        </div>
+    </div>
+
+    <div id="dlg" hidden>
+        <input type="file" id="dlg_multifile" multiple accept="image/*">
+    </div>
+
+    <div id="pyconsole">
+        <div id="terminal" tabindex="1"></div>
+    </div>
+
+    <script type="application/javascript">
+
+    globalThis.__canvas_resized = (self, ecw, ech) => {}
+
+    async function custom_onload(debug_hidden) {
+        pyconsole.hidden = true;
+        system.hidden    = true;
+        info.hidden      = true;
+        box.hidden       = true;
+        transfer.hidden  = debug_hidden;
+        show_infobox();
+    }
+
+    function custom_prerun()  {}
+    function custom_postrun() {}
+
+    function info_inline(data) {
+        document.getElementById("info").innerHTML = data;
+    }
+
+    function info_online(url) {
+        fetch(url).then(r => r.text()).then(html => info_inline(html)).catch(e => console.warn(e));
+    }
+
+    function frame_online(url) {
+        window.frames["iframe"].location = url;
+    }
+
+    </script>
+
+</body>
+</html>
