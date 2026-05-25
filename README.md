@@ -2,7 +2,7 @@
 
 **Play it live → [theemperorspath.github.io/tictactoe](https://theemperorspath.github.io/tictactoe/)**
 
-A CS50 AI project implementing an unbeatable Tic-Tac-Toe opponent using the minimax algorithm with alpha-beta pruning. The AI never loses — at best, you draw.
+My Harvard AI project implementing an unbeatable Tic-Tac-Toe opponent using the minimax algorithm with alpha-beta pruning. The AI never loses - at best, you draw.
 
 ---
 
